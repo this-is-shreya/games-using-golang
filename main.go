@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"os"
 
 	"example.com/games/controllers"
 	"example.com/games/database"
@@ -16,5 +17,6 @@ func main() {
 	r.HandleFunc("/api/signup", controllers.Signup).Methods("POST")
 	r.HandleFunc("/api/login", controllers.Login).Methods("POST")
 	r.HandleFunc("/test", middleware.VerifyToken(controllers.Test)).Methods("POST")
-	http.ListenAndServe(":8000", r)
+	PORT := os.Getenv("PORT")
+	http.ListenAndServe(PORT, r)
 }
