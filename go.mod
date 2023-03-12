@@ -13,7 +13,10 @@ require (
 	github.com/Valgard/godotenv v0.0.0-20200511222744-8873b92a09c5 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
+	github.com/jinzhu/gorm v1.9.16 // indirect
+	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
+	github.com/mingrammer/go-todo-rest-api-example v0.0.0-20190527014715-ae46b4d42804 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.6 // indirect
 	github.com/spf13/afero v1.9.3 // indirect
