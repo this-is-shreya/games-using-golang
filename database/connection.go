@@ -15,7 +15,9 @@ func Connection() {
 
 	user := environment.ViperEnvVariable("MYSQL_USER")
 	password := environment.ViperEnvVariable("MYSQL_PASSWORD")
-	conn := user + ":" + password + "@tcp(127.0.0.1:3306)/golang"
+	host := environment.ViperEnvVariable("MYSQL_HOST")
+	dbname := environment.ViperEnvVariable("DB_NAME")
+	conn := user + ":" + password + "@tcp(" + host + ":3306)/" + dbname
 
 	Db, err := sql.Open("mysql", conn)
 	if err != nil {
