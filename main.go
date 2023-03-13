@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
+	"os"
 
 	"example.com/games/controllers"
 	"example.com/games/database"
@@ -18,7 +20,11 @@ func main() {
 	r.HandleFunc("/api/login", controllers.Login).Methods("POST")
 	r.HandleFunc("/test", middleware.VerifyToken(controllers.Test)).Methods("POST")
 
-	port := environment.ViperEnvVariable("PORT")
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = environment.ViperEnvVariable("PORT")
+	}
+	fmt.Println("running on port: ", port)
 
 	http.ListenAndServe(":"+port, r)
 }

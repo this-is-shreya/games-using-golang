@@ -30,7 +30,7 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 	if dErr != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		resp.Success = false
-		resp.Message = "Internal server error"
+		resp.Message = "Internal server error1"
 		json.NewEncoder(w).Encode(resp)
 		return
 	}
@@ -39,7 +39,7 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		resp.Success = false
-		resp.Message = "Internal server error"
+		resp.Message = "Internal server error2"
 		json.NewEncoder(w).Encode(resp)
 		return
 
