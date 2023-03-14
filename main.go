@@ -14,7 +14,16 @@ import (
 )
 
 func main() {
-	database.Connection()
+	db := os.Getenv("DATABASE")
+	if db == "" {
+		db = environment.ViperEnvVariable("DATABASE")
+	}
+	client, ctx, _, err, _ := database.Connect(db)
+	if err != nil {
+		panic(err)
+	}
+
+	database.Ping(client, ctx)
 	r := mux.NewRouter()
 	r.HandleFunc("/api/signup", controllers.Signup).Methods("POST")
 	r.HandleFunc("/api/login", controllers.Login).Methods("POST")

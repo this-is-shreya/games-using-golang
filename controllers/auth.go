@@ -2,16 +2,27 @@ package controllers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"example.com/games/database"
 	"example.com/games/middleware"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type user struct {
 	Email      string `json:"email"`
 	First_name string `json:"first_name"`
 	Last_name  string `json:"last_name"`
+}
+type mongoResponse struct {
+	Email      string `bson:"email"`
+	First_name string `bson:"first_name"`
+	Last_name  string `bson:"last_name"`
+	Room       int    `bson:"room"`
+	Id         string `bson:"_id"`
 }
 type token struct {
 	TokenString string
@@ -20,10 +31,22 @@ type token struct {
 	Error       error
 }
 
+var Coll *mongo.Collection
+
 func Signup(w http.ResponseWriter, r *http.Request) {
+
+	conn := database.IsConnected
+
+	if conn {
+		Coll = database.Client.Database("golang").Collection("user")
+
+	} else {
+		fmt.Println(conn)
+		return
+	}
 	var resp = &token{}
 	w.Header().Set("Content-Type", "application/json")
-	Db := database.Database
+	// Db := database.Database
 	var u user
 	decoder := json.NewDecoder(r.Body)
 	dErr := decoder.Decode(&u)
@@ -34,33 +57,48 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(resp)
 		return
 	}
-	var n int32
-	err := Db.QueryRow(`SELECT COUNT(*) FROM user WHERE email=?`, u.Email).Scan(&n)
-	if err != nil {
+	var n = 0
+	filter := bson.D{
+		{Key: "email", Value: bson.D{{Key: "$eq", Value: u.Email}}},
+	}
+
+	var userObtained mongoResponse
+	opts := options.FindOne()
+
+	err := Coll.FindOne(database.Ctx, filter, opts).Decode(&userObtained)
+	// fmt.Println(err)
+	if err != mongo.ErrNoDocuments && err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		resp.Success = false
 		resp.Message = "Internal server error2"
+		resp.Error = err
 		json.NewEncoder(w).Encode(resp)
 		return
 
 	}
-	var roomNo int32
-	error := Db.QueryRow(`SELECT COUNT(*) FROM user`).Scan(&roomNo)
-	if error != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		resp.Success = false
-		resp.Message = "Internal server error"
-		json.NewEncoder(w).Encode(resp)
-		return
 
-	}
-	if n == 0 {
+	if userObtained == (mongoResponse{}) {
+		//find the room no, and insert
+		opts = options.FindOne().SetSort(bson.D{{Key: "_id", Value: -1}}).SetProjection(bson.D{{Key: "room", Value: 1}})
+		err = Coll.FindOne(database.Ctx, bson.D{}, opts).Decode(&n)
+		fmt.Println(err)
+		if err != mongo.ErrNoDocuments && err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			resp.Success = false
+			resp.Message = "Internal server error3"
+			json.NewEncoder(w).Encode(resp)
+			return
 
-		_, err := Db.Exec(`INSERT INTO user VALUES(?,?,?,?)`, u.Email, u.First_name, u.Last_name, (roomNo + 1))
+		}
+		_, err = Coll.InsertOne(database.Ctx, bson.D{
+			{Key: "email", Value: u.Email},
+			{Key: "first_name", Value: u.First_name},
+			{Key: "last_name", Value: u.Last_name},
+			{Key: "room", Value: n + 1}})
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			resp.Success = false
-			resp.Message = "Internal server error"
+			resp.Message = "Internal server error4"
 			json.NewEncoder(w).Encode(resp)
 			return
 
@@ -78,7 +116,7 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 		} else {
 			w.WriteHeader(http.StatusInternalServerError)
 			resp.Success = false
-			resp.Message = "Internal server error"
+			resp.Message = "Internal server error5"
 			json.NewEncoder(w).Encode(resp)
 			return
 
@@ -94,10 +132,18 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 }
 func Login(w http.ResponseWriter, r *http.Request) {
 
+	conn := database.IsConnected
+
+	if conn {
+		Coll = database.Client.Database("golang").Collection("user")
+
+	} else {
+		fmt.Println(conn)
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
 	var resp = &token{}
 
-	Db := database.Database
 	var u user
 	decoder := json.NewDecoder(r.Body)
 	dErr := decoder.Decode(&u)
@@ -110,19 +156,21 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 
 	}
-	var n int32
-	err := Db.QueryRow(`SELECT COUNT(*) FROM user WHERE email=?`, u.Email).Scan(&n)
+
+	err := Coll.FindOne(database.Ctx, bson.D{{Key: "email", Value: bson.D{{Key: "$eq", Value: u.Email}}}}, options.FindOne()).Decode(&u)
+	fmt.Println(err)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		resp.Success = false
 		resp.Error = err
+		resp.Message = "email id doesn't exist"
 		json.NewEncoder(w).Encode(resp)
 
 		return
 
 	}
 
-	if n == 0 {
+	if u == (user{}) {
 		w.WriteHeader(http.StatusNotFound)
 		resp.Success = false
 		resp.Message = "Email doesn't exist"
