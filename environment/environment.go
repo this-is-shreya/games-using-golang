@@ -8,7 +8,7 @@ import (
 
 func ViperEnvVariable(key string) string {
 
-	viper.SetConfigFile("./.env")
+	viper.SetConfigFile("./config.env")
 
 	err := viper.ReadInConfig()
 
